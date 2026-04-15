@@ -1,0 +1,60 @@
+global:
+  slack_api_url: "https://hooks.slack.com/services/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" #test webhook
+route:
+  group_by: ["alertname", "instance"]
+  group_wait: 30s
+  group_interval: 1m
+  repeat_interval: 5m
+  receiver: "notifications"
+
+  routes:
+    - match:
+        alertname: "Blacklisted"
+      group_by: ["alertname", "hostname"]
+      group_wait: 30s
+      group_interval: 2m
+      repeat_interval: 5m
+      receiver: "blacklist-notifications"
+
+receivers:
+  - name: "blacklist-notifications"
+    slack_configs:
+      - channel: "#prometheus-alert"
+        send_resolved: true
+        title: "{{ .GroupLabels.alertname }}"
+        text: |
+          {{ .GroupLabels.hostname }}  found in {{ len .Alerts }} blacklists.
+          RBLs: <http://localhost:9093/#/alerts?filter=%7Balertname%3D%22{{ .GroupLabels.alertname }}%22%2Chostname%3D%22{{ .GroupLabels.hostname }}%22%7D|View in Alertmanager>
+
+    discord_configs:
+      - webhook_url: "https://discord.com/api/webhooks/1405437558543876178/FZnZnRKWR_3xstecvTT6XW_7-pl8IiuLZuT1r8_b4gIxEDfSe4dkY3ETP6v2GgHbkc0l"
+        title: "{{ .GroupLabels.alertname }}"
+        message: |
+          {{ .GroupLabels.hostname }}  found in {{ len .Alerts }} blacklists.
+          RBLs: [View in Alertmanager](http://localhost:9093/#/alerts?filter=%7Balertname%3D%22{{ .GroupLabels.alertname }}%22%2Chostname%3D%22{{ .GroupLabels.hostname }}%22%7D)
+
+  - name: "notifications"
+    slack_configs:
+      - channel: "#prometheus-alert"
+        send_resolved: true
+        title: "{{ .GroupLabels.alertname }}"
+        text: |
+          {{- range .Alerts }}
+          - {{ .Labels.instance }} | {{ .Annotations.summary }}
+          {{- end }}
+
+    discord_configs:
+      - webhook_url: "https://discord.com/api/webhooks/1405437558543876178/FZnZnRKWR_3xstecvTT6XW_7-pl8IiuLZuT1r8_b4gIxEDfSe4dkY3ETP6v2GgHbkc0l"
+        send_resolved: true
+        title: "{{ .GroupLabels.alertname }}"
+        message: |
+          {{- range .Alerts }}
+          - {{ .Labels.instance }} | {{ .Annotations.summary }}
+          {{- end }}
+
+inhibit_rules:
+  - source_match:
+      severity: "critical"
+    target_match:
+      severity: "warning"
+    equal: ["instance"]

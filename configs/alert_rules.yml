@@ -1,0 +1,31 @@
+groups:
+  - name: Website Status
+    rules:
+      - alert: SiteDown
+        expr: probe_success == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Unreachable for 5 minute."
+
+      - alert: CertificateNearExpiry3Day
+        expr: (last_over_time(probe_ssl_earliest_cert_expiry[1h]) - time()) / 60 / 60 / 24 > 1 and (last_over_time(probe_ssl_earliest_cert_expiry[1h]) - time()) / 60 / 60 / 24 <= 3
+        labels:
+          severity: warning
+        annotations:
+          summary: "Expiring in 3 days"
+
+      - alert: CertificateNearExpiry1Day
+        expr: (last_over_time(probe_ssl_earliest_cert_expiry[1h]) - time()) / 60 / 60 / 24 > 0 and (last_over_time(probe_ssl_earliest_cert_expiry[1h]) - time()) / 60 / 60 / 24 <= 1
+        labels:
+          severity: warning
+        annotations:
+          summary: "Expiring in 24 hours"
+
+      - alert: CertificateExpired
+        expr: (last_over_time(probe_ssl_earliest_cert_expiry[1h]) - time()) <= 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Certificate Expired/Invalid"
