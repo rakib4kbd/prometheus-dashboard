@@ -22,8 +22,14 @@ The system maintains a single Prometheus instance where each user corresponds to
 
 ## Screenshots
 
+###### Application Demo
+
 ![dashboard](./assets/demo/dashboard.png)
-![dashboard](./assets/demo/monitoring-targets.png)
+![monitoring-targets](./assets/demo/monitoring-targets.png)
+
+###### Email Alert Demo
+
+![email](./assets/demo/email.png)
 
 ## Features
 
