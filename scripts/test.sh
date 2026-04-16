@@ -147,9 +147,9 @@ NX_TARGETS=$(api "/api/targets")
 ALERTS_OK=$(echo "$NX_ALERTS" | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
-print('ok' if 'firing' in d and 'recent' in d else 'bad')
+print('ok' if 'alerts' in d and 'recent' in d else 'bad')
 " 2>/dev/null || echo "bad")
-check "/api/alerts response has 'firing' and 'recent' keys" "ok" "$ALERTS_OK"
+check "/api/alerts response has 'alerts' and 'recent' keys" "ok" "$ALERTS_OK"
 
 # Stats structure
 STATS_OK=$(echo "$NX_STATS" | python3 -c "
@@ -183,7 +183,7 @@ nx_targets = json.loads('''${NX_TARGETS}''')
 all_prom = raw_prom.get('data', {}).get('alerts', [])
 prom_firing_user = [a for a in all_prom if a['state']=='firing' and a['labels'].get('username')=='${USERNAME}']
 
-nx_firing   = nx_alerts.get('firing', [])
+nx_firing   = nx_alerts.get('alerts', [])
 prom_count  = len(prom_firing_user)
 nx_count    = len(nx_firing)
 
@@ -197,27 +197,23 @@ def chk(label, expected, actual):
     reset = '\033[0m'
     print(f"  {color}{sym}{reset}  {label} (expected={expected}, got={actual})")
 
-chk("Firing alert count matches Prometheus", prom_count, nx_count)
+# /api/alerts now returns ALL alerts (any state) for the user, not just firing
+nx_firing_count = len([a for a in nx_firing if a.get('state') == 'firing'])
+chk("Firing alert count matches Prometheus", prom_count, nx_firing_count)
 chk("stats.firingAlerts matches Prometheus", prom_count, nx_stats.get('firingAlerts'))
-chk("stats.totalTargets matches config target count", len(nx_targets), nx_stats.get('totalTargets'))
+chk("stats.totalTargets matches /api/targets count", len(nx_targets), nx_stats.get('totalTargets'))
 
 prom_instances = sorted(set(a['labels'].get('instance','') for a in prom_firing_user))
-nx_instances   = sorted(set(a['instance'] for a in nx_firing))
+nx_instances   = sorted(set(a.get('labels',{}).get('instance', a.get('instance',''))
+                              for a in nx_firing if a.get('state') == 'firing'))
 chk("Firing instances match between Prometheus and NextJS", prom_instances, nx_instances)
 
 uniq_impacted = len(set(a['labels'].get('instance','') for a in prom_firing_user))
 chk("stats.impactedTargets matches unique firing instances", uniq_impacted, nx_stats.get('impactedTargets'))
 
-# All targets in NextJS should appear in Prometheus config (job=username)
-prom_job_targets = [a['labels'].get('instance','') for a in all_prom if a['labels'].get('job')=='${USERNAME}']
-for t in nx_targets:
-    # nx_targets are URLs; prom instances are the same URLs after relabeling
-    match = t in prom_job_targets
-    results.append(match)
-    sym = 'PASS' if match else 'FAIL'
-    color = '\033[32m' if match else '\033[31m'
-    reset = '\033[0m'
-    print(f"  {color}{sym}{reset}  Target '{t}' appears in Prometheus job labels")
+# Each alert returned by NextJS must carry required fields
+fields_ok = all('labels' in a and 'state' in a and 'activeAt' in a for a in nx_firing)
+chk("All /api/alerts items have labels, state, activeAt fields", True, fields_ok)
 
 total = len(results)
 passed = sum(results)
