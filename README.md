@@ -1,3 +1,10 @@
+<div style="padding: 10px; border-radius: 10px; color: #856404; background-color: #fff3cd">
+<strong>Warning!</strong> Requires security audit on production use case.
+
+</div>
+
+<br>
+
 # Prometheus Multi-User Monitoring Dashboard
 
 A SaaS dashboard built with Next.js for managing Prometheus Blackbox monitoring jobs. Each user gets their own monitoring job, can add targets, view alerts, and receive email notifications.
