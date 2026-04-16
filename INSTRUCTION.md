@@ -271,4 +271,3 @@ NO job creation via API
 1. Backend correctness
 2. Config safety (no corruption)
 3. Alert dedup accuracy
-4. Performance (cache)
