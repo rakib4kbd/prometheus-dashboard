@@ -20,6 +20,11 @@ This application provides a multi-user interface for Prometheus monitoring, spec
 
 The system maintains a single Prometheus instance where each user corresponds to exactly one Blackbox job, ensuring isolation and scalability.
 
+## Screenshots
+
+![dashboard](./assets/demo/dashboard.png)
+![dashboard](./assets/demo/monitoring-targets.png)
+
 ## Features
 
 - **User Authentication**: Secure login/registration with JWT tokens
