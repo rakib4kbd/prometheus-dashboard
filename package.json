@@ -1,0 +1,35 @@
+{
+  "name": "prometheus-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^14.2.0",
+    "react": "^18",
+    "react-dom": "^18",
+    "axios": "^1.6.0",
+    "pg": "^8.11.0",
+    "nodemailer": "^6.9.0",
+    "jose": "^5.2.0",
+    "js-yaml": "^4.1.0",
+    "bcryptjs": "^2.4.3",
+    "daisyui": "^3.9.4",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8",
+    "autoprefixer": "^10"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/pg": "^8.10.0",
+    "@types/nodemailer": "^6.4.0",
+    "@types/js-yaml": "^4.0.0",
+    "@types/bcryptjs": "^2.4.0"
+  }
+}

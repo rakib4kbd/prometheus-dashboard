@@ -1,76 +1,32 @@
 global:
   scrape_interval: 15s
-
 scrape_configs:
   - job_name: prometheus
     static_configs:
       - targets:
-          - "prometheus:9090"
-
-  - job_name: "blackbox_targets"
+          - prometheus:9090
+  - job_name: admin
     metrics_path: /probe
     params:
-      module: [http_default]
+      module:
+        - http_default
     static_configs:
       - targets:
-          - https://petportrait.ai/
-          - https://noco.ratio.is/
-          - https://dev.ratio.is/
-          - https://austinozone.com/
-          - https://freeoilfieldquote.com/
-          - https://inventory.freeoilfieldquote.com/
-          - https://outboundsecurity.com/
-          - https://mxdefenders.com/
-          - https://mxshields.com/
-          - https://spvfraudprevention.com/
-          - https://bigdatanode.com/
-          - https://serverminers.com/
-          - https://blockchainly.net/
-          - https://blockchainmta.com/
-          - https://mtasecured.com/
-          - https://privatemta.com/
-          - https://cleanser.ai/
-          - https://clustercats.com/
-          - https://antispamscanner.com/
-          - https://antispamshield.com/
-          - https://antispamnode.com/
-          - https://emailprotects.com/
-          - https://secureemailprotection.com/
-          - https://spvsrv.com/
-          - https://emailly.net/
-          - https://securedmx.com/
-          - https://mtaly.com/
-          - https://cms.artistic.art/
-          - https://api.cleanser.ai/
-          - https://flow.ratio.is/
-          - https://threats.artistic.art/
-          - https://chat.ratio.is/
-          - https://vault.artistic.art/
-          - https://psqlapi.ratio.is/
-          - https://infra.artistic.art/
-          # - https://email.emailly.net/
-          - https://login.powergroup.ai/
-          - https://wise.ratio.is/
-          - https://psql.ratio.is/
-          #- http://pma.ratio.is/
-          - https://lab.ratio.is/
-          - https://graylog.mailninja.com/
-          - https://grafana.mailninja.com/
+          - http://domain.tld
+          - https://added.custom
+        labels:
+          username: admin
     relabel_configs:
-      - source_labels: [__address__]
+      - source_labels:
+          - __address__
         target_label: __param_target
-      - source_labels: [__param_target]
+      - source_labels:
+          - __param_target
         target_label: instance
       - target_label: __address__
         replacement: blackbox:9115
-
-  - job_name: "blackbox_exporter"
-    static_configs:
-      - targets: ["blackbox:9115"]
-
 rule_files:
   - alert_rules.yml
-
 alerting:
   alertmanagers:
     - static_configs:
