@@ -1,6 +1,7 @@
 services:
   prometheus:
-    image: prom/prometheus
+    image: prom/prometheus:v2.51.2
+    restart: unless-stopped
     ports:
       - "9090:9090"
     volumes:
@@ -9,51 +10,120 @@ services:
       - prometheus-data:/prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--web.external-url=http://localhost:9090"
       - "--web.enable-lifecycle"
+      - "--storage.tsdb.retention.time=15d"
+      - "--storage.tsdb.retention.size=5GB"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "0.75"
     networks:
       - prom-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   alertmanager:
-    image: prom/alertmanager
+    image: prom/alertmanager:v0.27.0
+    restart: unless-stopped
     ports:
       - "9093:9093"
     volumes:
       - ./configs/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
     command:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
-      - "--web.external-url=http://localhost:9093"
+      - "--storage.path=/alertmanager"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
     networks:
       - prom-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   blackbox:
     image: prom/blackbox-exporter:v0.26.0
-    restart: always
+    restart: unless-stopped
     ports:
       - "9115:9115"
     volumes:
       - ./configs/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9115/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
     networks:
       - prom-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   db:
-    image: postgres
-    restart: always
-    # set shared memory limit when using docker compose
+    image: postgres:16-alpine
+    restart: unless-stopped
     shm_size: 128mb
     ports:
-      - 5432:5432
-    # or set shared memory limit when deploy via swarm stack
-    #volumes:
-    #  - type: tmpfs
-    #    target: /dev/shm
-    #    tmpfs:
-    #      size: 134217728 # 128*2^20 bytes = 128Mb
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    networks:
+      - prom-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   prometheus-data:
+  alertmanager-data:
+  postgres-data:
 
 networks:
   prom-net:
+    driver: bridge

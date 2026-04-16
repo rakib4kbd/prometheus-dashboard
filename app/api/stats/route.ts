@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUser } from '@/lib/auth';
-import { getCache } from '@/lib/cache';
+import { getCacheOrRefresh } from '@/lib/cache';
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const cache = getCache();
+  const cache = await getCacheOrRefresh();
   const userAlerts = cache.alerts.filter((a) => a.labels.username === user.username);
   const userTargets = cache.targets[user.username] || [];
   const firingAlerts = userAlerts.filter((a) => a.state === 'firing');

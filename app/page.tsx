@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { Globe, LogIn, UserPlus, User, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 
 export default function HomePage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -27,61 +28,88 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-base-200">
+    <div className="min-h-screen flex items-center justify-center bg-base-200 px-4">
       <div className="card w-full max-w-md bg-base-100 shadow-xl">
-        <div className="card-body">
-          <h2 className="card-title text-2xl mb-2">Prometheus Dashboard</h2>
+        <div className="card-body p-6 sm:p-8">
+          {/* Logo */}
+          <div className="flex items-center gap-2 mb-1">
+            <Globe className="w-7 h-7 text-primary" />
+            <h2 className="text-2xl font-bold">Prometheus</h2>
+          </div>
+          <p className="text-sm opacity-50 mb-4">Multi-user monitoring dashboard</p>
 
-          <div className="tabs tabs-boxed mb-4">
+          {/* Tabs */}
+          <div className="tabs tabs-boxed mb-5">
             <button
-              className={`tab ${mode === 'login' ? 'tab-active' : ''}`}
-              onClick={() => setMode('login')}
+              className={`tab flex-1 gap-2 ${mode === 'login' ? 'tab-active' : ''}`}
+              onClick={() => { setMode('login'); setError(''); }}
             >
+              <LogIn className="w-4 h-4" />
               Login
             </button>
             <button
-              className={`tab ${mode === 'register' ? 'tab-active' : ''}`}
-              onClick={() => setMode('register')}
+              className={`tab flex-1 gap-2 ${mode === 'register' ? 'tab-active' : ''}`}
+              onClick={() => { setMode('register'); setError(''); }}
             >
+              <UserPlus className="w-4 h-4" />
               Register
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
-            <input
-              className="input input-bordered w-full"
-              placeholder="Username"
-              value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
-              required
-            />
-            {mode === 'register' && (
+            <label className="input input-bordered flex items-center gap-2">
+              <User className="w-4 h-4 opacity-40 shrink-0" />
               <input
-                type="email"
-                className="input input-bordered w-full"
-                placeholder="Email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="grow"
+                placeholder="Username"
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
                 required
               />
+            </label>
+
+            {mode === 'register' && (
+              <label className="input input-bordered flex items-center gap-2">
+                <Mail className="w-4 h-4 opacity-40 shrink-0" />
+                <input
+                  type="email"
+                  className="grow"
+                  placeholder="Email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  required
+                />
+              </label>
             )}
-            <input
-              type="password"
-              className="input input-bordered w-full"
-              placeholder="Password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-            />
-            {error && <div className="alert alert-error text-sm py-2">{error}</div>}
-            <button type="submit" className="btn btn-primary w-full" disabled={loading}>
+
+            <label className="input input-bordered flex items-center gap-2">
+              <Lock className="w-4 h-4 opacity-40 shrink-0" />
+              <input
+                type="password"
+                className="grow"
+                placeholder="Password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                required
+              />
+            </label>
+
+            {error && (
+              <div className="alert alert-error py-2 text-sm gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <button type="submit" className="btn btn-primary w-full gap-2 mt-1" disabled={loading}>
               {loading ? (
-                <span className="loading loading-spinner loading-sm" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : mode === 'login' ? (
-                'Login'
+                <LogIn className="w-4 h-4" />
               ) : (
-                'Register'
+                <UserPlus className="w-4 h-4" />
               )}
+              {loading ? 'Please wait…' : mode === 'login' ? 'Login' : 'Create account'}
             </button>
           </form>
         </div>
