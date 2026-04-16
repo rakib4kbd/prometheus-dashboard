@@ -1,7 +1,7 @@
-'use client';
-import { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
+"use client";
+import { useCallback, useEffect, useState } from "react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 import {
   Globe,
   AlertTriangle,
@@ -16,12 +16,13 @@ import {
   Shield,
   Tag,
   Info,
-} from 'lucide-react';
-import { PrometheusAlert } from '@/types';
+} from "lucide-react";
+import { PrometheusAlert } from "@/types";
+import Link from "next/link";
 
 interface TargetRow {
   url: string;
-  status: 'firing' | 'healthy';
+  status: "firing" | "healthy";
   alerts: PrometheusAlert[];
 }
 
@@ -30,7 +31,7 @@ const PAGE_SIZE = 10;
 function relativeTime(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return 'just now';
+  if (m < 1) return "just now";
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
@@ -38,8 +39,8 @@ function relativeTime(iso: string) {
 }
 
 export default function DashboardPage() {
-  const [username, setUsername] = useState('');
-  const [role, setRole] = useState('');
+  const [username, setUsername] = useState("");
+  const [role, setRole] = useState("");
   const [allAlerts, setAllAlerts] = useState<PrometheusAlert[]>([]);
   const [targets, setTargets] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,8 +48,10 @@ export default function DashboardPage() {
   const [checkedAt, setCheckedAt] = useState<Date | null>(null);
 
   // Filters
-  const [urlFilter, setUrlFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'firing' | 'healthy'>('all');
+  const [urlFilter, setUrlFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "firing" | "healthy"
+  >("all");
 
   // Pagination
   const [page, setPage] = useState(0);
@@ -62,36 +65,44 @@ export default function DashboardPage() {
       return next;
     });
 
-  useEffect(() => { setPage(0); setExpanded(new Set()); }, [urlFilter, statusFilter]);
+  useEffect(() => {
+    setPage(0);
+    setExpanded(new Set());
+  }, [urlFilter, statusFilter]);
 
   const router = useRouter();
 
-  const load = useCallback(async (manual = false) => {
-    if (manual) setRefreshing(true);
-    try {
-      const [meRes, targetsRes, alertsRes] = await Promise.all([
-        axios.get('/api/auth/me'),
-        axios.get('/api/targets'),
-        axios.get('/api/alerts'),
-      ]);
-      setUsername(meRes.data.username);
-      setRole(meRes.data.role);
-      setTargets(targetsRes.data ?? []);
-      setAllAlerts(alertsRes.data.alerts ?? []);
-      setCheckedAt(new Date());
-    } catch {
-      router.push('/');
-    } finally {
-      setLoading(false);
-      if (manual) setRefreshing(false);
-    }
-  }, [router]);
+  const load = useCallback(
+    async (manual = false) => {
+      if (manual) setRefreshing(true);
+      try {
+        const [meRes, targetsRes, alertsRes] = await Promise.all([
+          axios.get("/api/auth/me"),
+          axios.get("/api/targets"),
+          axios.get("/api/alerts"),
+        ]);
+        setUsername(meRes.data.username);
+        setRole(meRes.data.role);
+        setTargets(targetsRes.data ?? []);
+        setAllAlerts(alertsRes.data.alerts ?? []);
+        setCheckedAt(new Date());
+      } catch {
+        router.push("/");
+      } finally {
+        setLoading(false);
+        if (manual) setRefreshing(false);
+      }
+    },
+    [router],
+  );
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const logout = async () => {
-    await axios.post('/api/auth/logout');
-    router.push('/');
+    await axios.post("/api/auth/logout");
+    router.push("/");
   };
 
   // ── Derived ──────────────────────────────────────────────────────────────────
@@ -100,17 +111,17 @@ export default function DashboardPage() {
     const alerts = allAlerts.filter((a) => a.labels.instance === url);
     return {
       url,
-      status: alerts.some((a) => a.state === 'firing') ? 'firing' : 'healthy',
+      status: alerts.some((a) => a.state === "firing") ? "firing" : "healthy",
       alerts,
     };
   });
 
-  const firingCount = targetRows.filter((t) => t.status === 'firing').length;
+  const firingCount = targetRows.filter((t) => t.status === "firing").length;
   const totalAlertCount = allAlerts.length;
 
   const filtered = targetRows.filter((t) => {
     const urlMatch = t.url.toLowerCase().includes(urlFilter.toLowerCase());
-    const statusMatch = statusFilter === 'all' || t.status === statusFilter;
+    const statusMatch = statusFilter === "all" || t.status === statusFilter;
     return urlMatch && statusMatch;
   });
 
@@ -135,20 +146,27 @@ export default function DashboardPage() {
       <div className="navbar bg-base-100 shadow-sm px-4">
         <div className="flex-1 flex items-center gap-2">
           <Globe className="w-5 h-5 text-primary" />
-          <span className="font-bold text-base hidden sm:inline">Prometheus</span>
+          <span className="font-bold text-base hidden sm:inline">
+            Prometheus
+          </span>
         </div>
         <div className="flex-none flex items-center gap-1">
-          <a href="/alerts" className="btn btn-ghost btn-sm gap-1">
+          <Link
+            href="/alerts"
+            className="btn btn-ghost btn-sm gap-1 text-error"
+          >
             <Bell className="w-4 h-4" />
             <span className="hidden sm:inline">Alerts</span>
-          </a>
-          {role === 'admin' && (
-            <a href="/admin" className="btn btn-ghost btn-sm gap-1">
+          </Link>
+          {role === "admin" && (
+            <Link href="/admin" className="btn btn-ghost btn-sm gap-1">
               <Shield className="w-4 h-4" />
               <span className="hidden sm:inline">Admin</span>
-            </a>
+            </Link>
           )}
-          <span className="hidden sm:block text-sm opacity-40 px-1">{username}</span>
+          <span className="hidden sm:block text-sm opacity-40 px-1">
+            {username}
+          </span>
           <button className="btn btn-ghost btn-sm" onClick={logout}>
             <LogOut className="w-4 h-4" />
           </button>
@@ -166,8 +184,12 @@ export default function DashboardPage() {
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div className="stat-title text-xs sm:text-sm">Firing Targets</div>
-            <div className="stat-value text-error text-2xl sm:text-3xl">{firingCount}</div>
-            <div className="stat-desc text-xs opacity-50 hidden sm:block">click to view alerts →</div>
+            <div className="stat-value text-error text-2xl sm:text-3xl">
+              {firingCount}
+            </div>
+            <div className="stat-desc text-xs opacity-50 hidden sm:block">
+              click to view alerts →
+            </div>
           </a>
 
           <a
@@ -178,8 +200,12 @@ export default function DashboardPage() {
               <Bell className="w-6 h-6" />
             </div>
             <div className="stat-title text-xs sm:text-sm">Total Alerts</div>
-            <div className="stat-value text-2xl sm:text-3xl">{totalAlertCount}</div>
-            <div className="stat-desc text-xs opacity-50 hidden sm:block">click to view all →</div>
+            <div className="stat-value text-2xl sm:text-3xl">
+              {totalAlertCount}
+            </div>
+            <div className="stat-desc text-xs opacity-50 hidden sm:block">
+              click to view all →
+            </div>
           </a>
 
           <a
@@ -190,8 +216,12 @@ export default function DashboardPage() {
               <Globe className="w-6 h-6" />
             </div>
             <div className="stat-title text-xs sm:text-sm">Targets</div>
-            <div className="stat-value text-info text-2xl sm:text-3xl">{targets.length}</div>
-            <div className="stat-desc text-xs opacity-50 hidden sm:block">click to manage →</div>
+            <div className="stat-value text-info text-2xl sm:text-3xl">
+              {targets.length}
+            </div>
+            <div className="stat-desc text-xs opacity-50 hidden sm:block">
+              click to manage →
+            </div>
           </a>
         </div>
 
@@ -212,7 +242,9 @@ export default function DashboardPage() {
             onClick={() => load(true)}
             disabled={refreshing}
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+            />
             Refresh
           </button>
         </div>
@@ -231,7 +263,9 @@ export default function DashboardPage() {
           <select
             className="select select-bordered select-sm w-full sm:w-36"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as typeof statusFilter)
+            }
           >
             <option value="all">All</option>
             <option value="firing">Firing</option>
@@ -257,8 +291,8 @@ export default function DashboardPage() {
                   <tr>
                     <td colSpan={5} className="text-center py-10 opacity-40">
                       {targets.length === 0
-                        ? 'No targets configured — add one in Settings'
-                        : 'No targets match the current filter'}
+                        ? "No targets configured — add one in Settings"
+                        : "No targets match the current filter"}
                     </td>
                   </tr>
                 )}
@@ -272,13 +306,15 @@ export default function DashboardPage() {
                       <td>
                         <ChevronDown
                           className={`w-4 h-4 opacity-40 transition-transform duration-200 ${
-                            expanded.has(i) ? 'rotate-180' : ''
+                            expanded.has(i) ? "rotate-180" : ""
                           }`}
                         />
                       </td>
-                      <td className="font-mono text-sm break-all max-w-xs">{t.url}</td>
+                      <td className="font-mono text-sm break-all max-w-xs">
+                        {t.url}
+                      </td>
                       <td>
-                        {t.status === 'firing' ? (
+                        {t.status === "firing" ? (
                           <span className="badge badge-error gap-1">
                             <AlertTriangle className="w-3 h-3" /> Firing
                           </span>
@@ -290,13 +326,17 @@ export default function DashboardPage() {
                       </td>
                       <td className="hidden sm:table-cell text-sm">
                         {t.alerts.length > 0 ? (
-                          <span className="font-medium text-error">{t.alerts.length}</span>
+                          <span className="font-medium text-error">
+                            {t.alerts.length}
+                          </span>
                         ) : (
                           <span className="opacity-30">0</span>
                         )}
                       </td>
                       <td className="hidden md:table-cell text-xs opacity-40">
-                        {checkedAt ? relativeTime(checkedAt.toISOString()) : '—'}
+                        {checkedAt
+                          ? relativeTime(checkedAt.toISOString())
+                          : "—"}
                       </td>
                     </tr>
 
@@ -321,9 +361,9 @@ export default function DashboardPage() {
                                     </span>
                                     <span
                                       className={`badge badge-sm ${
-                                        a.state === 'firing'
-                                          ? 'badge-error'
-                                          : 'badge-warning'
+                                        a.state === "firing"
+                                          ? "badge-error"
+                                          : "badge-warning"
                                       }`}
                                     >
                                       {a.state}
@@ -339,10 +379,22 @@ export default function DashboardPage() {
                                       </p>
                                       <div className="space-y-0.5">
                                         {Object.entries(a.labels)
-                                          .filter(([k]) => !['alertname', 'instance', 'username'].includes(k))
+                                          .filter(
+                                            ([k]) =>
+                                              ![
+                                                "alertname",
+                                                "instance",
+                                                "username",
+                                              ].includes(k),
+                                          )
                                           .map(([k, v]) => (
-                                            <div key={k} className="font-mono text-xs flex gap-2">
-                                              <span className="opacity-40 shrink-0">{k}:</span>
+                                            <div
+                                              key={k}
+                                              className="font-mono text-xs flex gap-2"
+                                            >
+                                              <span className="opacity-40 shrink-0">
+                                                {k}:
+                                              </span>
                                               <span>{v}</span>
                                             </div>
                                           ))}
@@ -351,14 +403,22 @@ export default function DashboardPage() {
                                     {Object.keys(a.annotations).length > 0 && (
                                       <div>
                                         <p className="flex items-center gap-1 text-xs opacity-50 font-semibold uppercase tracking-wide mb-1">
-                                          <Info className="w-3 h-3" /> Annotations
+                                          <Info className="w-3 h-3" />{" "}
+                                          Annotations
                                         </p>
-                                        {Object.entries(a.annotations).map(([k, v]) => (
-                                          <div key={k} className="font-mono text-xs">
-                                            <span className="opacity-40">{k}: </span>
-                                            <span>{v}</span>
-                                          </div>
-                                        ))}
+                                        {Object.entries(a.annotations).map(
+                                          ([k, v]) => (
+                                            <div
+                                              key={k}
+                                              className="font-mono text-xs"
+                                            >
+                                              <span className="opacity-40">
+                                                {k}:{" "}
+                                              </span>
+                                              <span>{v}</span>
+                                            </div>
+                                          ),
+                                        )}
                                       </div>
                                     )}
                                   </div>

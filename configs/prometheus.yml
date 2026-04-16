@@ -14,8 +14,29 @@ scrape_configs:
       - targets:
           - http://domain.tld
           - https://added.custom
+          - https://test-target-1776374553.example.com
+          - https://google.com
+          - https://mrphix.com
         labels:
           username: admin
+    relabel_configs:
+      - source_labels:
+          - __address__
+        target_label: __param_target
+      - source_labels:
+          - __param_target
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115
+  - job_name: test
+    metrics_path: /probe
+    params:
+      module:
+        - http_default
+    static_configs:
+      - targets: []
+        labels:
+          username: test
     relabel_configs:
       - source_labels:
           - __address__

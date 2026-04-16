@@ -1,7 +1,7 @@
-'use client';
-import { Suspense, useCallback, useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import axios from 'axios';
+"use client";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import axios from "axios";
 import {
   ArrowLeft,
   Bell,
@@ -14,8 +14,9 @@ import {
   Globe,
   Tag,
   Info,
-} from 'lucide-react';
-import { PrometheusAlert } from '@/types';
+} from "lucide-react";
+import { PrometheusAlert } from "@/types";
+import Link from "next/link";
 
 interface RecentAlert {
   alert_name: string;
@@ -28,13 +29,15 @@ const PAGE_SIZE = 10;
 
 function stateBadge(state: string) {
   const map: Record<string, string> = {
-    firing: 'badge-error',
-    pending: 'badge-warning',
-    resolved: 'badge-success',
-    inactive: 'badge-ghost',
+    firing: "badge-error",
+    pending: "badge-warning",
+    resolved: "badge-success",
+    inactive: "badge-ghost",
   };
   return (
-    <span className={`badge badge-sm font-medium ${map[state] ?? 'badge-ghost'}`}>
+    <span
+      className={`badge badge-sm font-medium ${map[state] ?? "badge-ghost"}`}
+    >
       {state}
     </span>
   );
@@ -43,7 +46,7 @@ function stateBadge(state: string) {
 function relativeTime(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return 'just now';
+  if (m < 1) return "just now";
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
@@ -56,7 +59,7 @@ function AlertsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState("");
   const [alerts, setAlerts] = useState<PrometheusAlert[]>([]);
   const [recent, setRecent] = useState<RecentAlert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,12 +67,12 @@ function AlertsContent() {
   const [checkedAt, setCheckedAt] = useState<Date | null>(null);
 
   // filters
-  const [nameFilter, setNameFilter] = useState('');
+  const [nameFilter, setNameFilter] = useState("");
   const [stateFilter, setStateFilter] = useState(
-    searchParams.get('filter') ?? 'all',
+    searchParams.get("filter") ?? "all",
   );
-  const [tab, setTab] = useState<'active' | 'history'>(
-    searchParams.get('filter') === 'history' ? 'history' : 'active',
+  const [tab, setTab] = useState<"active" | "history">(
+    searchParams.get("filter") === "history" ? "history" : "active",
   );
 
   // pagination
@@ -86,52 +89,70 @@ function AlertsContent() {
     });
 
   // Reset page + expanded when filters change
-  useEffect(() => { setPage(0); setExpanded(new Set()); }, [nameFilter, stateFilter, tab]);
+  useEffect(() => {
+    setPage(0);
+    setExpanded(new Set());
+  }, [nameFilter, stateFilter, tab]);
 
-  const load = useCallback(async (manual = false) => {
-    if (manual) setRefreshing(true);
-    try {
-      const [meRes, alertsRes] = await Promise.all([
-        axios.get('/api/auth/me'),
-        axios.get('/api/alerts'),
-      ]);
-      setUsername(meRes.data.username);
-      setAlerts(alertsRes.data.alerts ?? []);
-      setRecent(alertsRes.data.recent ?? []);
-      setCheckedAt(new Date());
-    } catch {
-      router.push('/');
-    } finally {
-      setLoading(false);
-      if (manual) setRefreshing(false);
-    }
-  }, [router]);
+  const load = useCallback(
+    async (manual = false) => {
+      if (manual) setRefreshing(true);
+      try {
+        const [meRes, alertsRes] = await Promise.all([
+          axios.get("/api/auth/me"),
+          axios.get("/api/alerts"),
+        ]);
+        setUsername(meRes.data.username);
+        setAlerts(alertsRes.data.alerts ?? []);
+        setRecent(alertsRes.data.recent ?? []);
+        setCheckedAt(new Date());
+      } catch {
+        router.push("/");
+      } finally {
+        setLoading(false);
+        if (manual) setRefreshing(false);
+      }
+    },
+    [router],
+  );
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const logout = async () => {
-    await axios.post('/api/auth/logout');
-    router.push('/');
+    await axios.post("/api/auth/logout");
+    router.push("/");
   };
 
   // ── Derived data ────────────────────────────────────────────────────────────
 
   const filteredActive = alerts.filter((a) => {
-    const nameMatch = a.labels.alertname?.toLowerCase().includes(nameFilter.toLowerCase());
-    const stateMatch = stateFilter === 'all' || a.state === stateFilter;
+    const nameMatch = a.labels.alertname
+      ?.toLowerCase()
+      .includes(nameFilter.toLowerCase());
+    const stateMatch = stateFilter === "all" || a.state === stateFilter;
     return nameMatch && stateMatch;
   });
 
   const filteredHistory = recent.filter((r) => {
-    const nameMatch = r.alert_name.toLowerCase().includes(nameFilter.toLowerCase());
-    const stateMatch = stateFilter === 'all' || r.status === stateFilter;
+    const nameMatch = r.alert_name
+      .toLowerCase()
+      .includes(nameFilter.toLowerCase());
+    const stateMatch = stateFilter === "all" || r.status === stateFilter;
     return nameMatch && stateMatch;
   });
 
-  const activeList = filteredActive.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  const historyList = filteredHistory.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const activeList = filteredActive.slice(
+    page * PAGE_SIZE,
+    (page + 1) * PAGE_SIZE,
+  );
+  const historyList = filteredHistory.slice(
+    page * PAGE_SIZE,
+    (page + 1) * PAGE_SIZE,
+  );
   const totalPages =
-    tab === 'active'
+    tab === "active"
       ? Math.ceil(filteredActive.length / PAGE_SIZE)
       : Math.ceil(filteredHistory.length / PAGE_SIZE);
 
@@ -152,10 +173,10 @@ function AlertsContent() {
       {/* Navbar */}
       <div className="navbar bg-base-100 shadow-sm px-4">
         <div className="flex-1 flex items-center gap-2">
-          <a href="/dashboard" className="btn btn-ghost btn-sm gap-1">
+          <Link href="/dashboard" className="btn btn-ghost btn-sm gap-1">
             <ArrowLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Dashboard</span>
-          </a>
+          </Link>
           <div className="divider divider-horizontal mx-0 hidden sm:flex" />
           <Bell className="w-5 h-5 text-primary hidden sm:block" />
           <span className="font-bold text-base hidden sm:inline">Alerts</span>
@@ -180,7 +201,8 @@ function AlertsContent() {
             </h1>
             {checkedAt && (
               <p className="text-xs opacity-40 flex items-center gap-1 mt-0.5">
-                <Clock className="w-3 h-3" /> checked {relativeTime(checkedAt.toISOString())}
+                <Clock className="w-3 h-3" /> checked{" "}
+                {relativeTime(checkedAt.toISOString())}
               </p>
             )}
           </div>
@@ -189,7 +211,9 @@ function AlertsContent() {
             onClick={() => load(true)}
             disabled={refreshing}
           >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+            />
             Refresh
           </button>
         </div>
@@ -197,16 +221,16 @@ function AlertsContent() {
         {/* Tabs */}
         <div className="tabs tabs-boxed w-fit">
           <button
-            className={`tab gap-2 ${tab === 'active' ? 'tab-active' : ''}`}
-            onClick={() => setTab('active')}
+            className={`tab gap-2 ${tab === "active" ? "tab-active" : ""}`}
+            onClick={() => setTab("active")}
           >
             <AlertTriangle className="w-4 h-4" />
             Active
             <span className="badge badge-sm">{filteredActive.length}</span>
           </button>
           <button
-            className={`tab gap-2 ${tab === 'history' ? 'tab-active' : ''}`}
-            onClick={() => setTab('history')}
+            className={`tab gap-2 ${tab === "history" ? "tab-active" : ""}`}
+            onClick={() => setTab("history")}
           >
             <Clock className="w-4 h-4" />
             History (30d)
@@ -233,7 +257,7 @@ function AlertsContent() {
             <option value="all">All states</option>
             <option value="firing">Firing</option>
             <option value="pending">Pending</option>
-            {tab === 'history' && <option value="resolved">Resolved</option>}
+            {tab === "history" && <option value="resolved">Resolved</option>}
           </select>
         </div>
 
@@ -251,14 +275,14 @@ function AlertsContent() {
                 </tr>
               </thead>
               <tbody>
-                {tab === 'active' && activeList.length === 0 && (
+                {tab === "active" && activeList.length === 0 && (
                   <tr>
                     <td colSpan={5} className="text-center py-8 opacity-40">
                       No active alerts match the current filter
                     </td>
                   </tr>
                 )}
-                {tab === 'active' &&
+                {tab === "active" &&
                   activeList.map((a, i) => (
                     <ActiveRow
                       key={i}
@@ -269,14 +293,14 @@ function AlertsContent() {
                     />
                   ))}
 
-                {tab === 'history' && historyList.length === 0 && (
+                {tab === "history" && historyList.length === 0 && (
                   <tr>
                     <td colSpan={5} className="text-center py-8 opacity-40">
                       No history matches the current filter
                     </td>
                   </tr>
                 )}
-                {tab === 'history' &&
+                {tab === "history" &&
                   historyList.map((r, i) => (
                     <HistoryRow
                       key={i}
@@ -333,20 +357,19 @@ function ActiveRow({
 }) {
   return (
     <>
-      <tr
-        className="hover cursor-pointer"
-        onClick={onToggle}
-      >
+      <tr className="hover cursor-pointer" onClick={onToggle}>
         <td>
           <ChevronDown
-            className={`w-4 h-4 opacity-40 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 opacity-40 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
           />
         </td>
-        <td className="font-medium">{a.labels.alertname ?? '—'}</td>
+        <td className="font-medium">{a.labels.alertname ?? "—"}</td>
         <td className="font-mono text-xs opacity-70 max-w-[200px] truncate">
-          {a.labels.instance ?? a.labels.target ?? '—'}
+          {a.labels.instance ?? a.labels.target ?? "—"}
         </td>
-        <td className="text-xs whitespace-nowrap">{relativeTime(a.activeAt)}</td>
+        <td className="text-xs whitespace-nowrap">
+          {relativeTime(a.activeAt)}
+        </td>
         <td>{stateBadge(a.state)}</td>
       </tr>
       {expanded && (
@@ -423,12 +446,16 @@ function HistoryRow({
       <tr className="hover cursor-pointer" onClick={onToggle}>
         <td>
           <ChevronDown
-            className={`w-4 h-4 opacity-40 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 opacity-40 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
           />
         </td>
         <td className="font-medium">{r.alert_name}</td>
-        <td className="font-mono text-xs opacity-70 max-w-[200px] truncate">{r.instance}</td>
-        <td className="text-xs whitespace-nowrap">{new Date(r.starts_at).toLocaleString()}</td>
+        <td className="font-mono text-xs opacity-70 max-w-[200px] truncate">
+          {r.instance}
+        </td>
+        <td className="text-xs whitespace-nowrap">
+          {new Date(r.starts_at).toLocaleString()}
+        </td>
         <td>{stateBadge(r.status)}</td>
       </tr>
       {expanded && (
@@ -436,12 +463,18 @@ function HistoryRow({
           <td colSpan={5} className="p-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-xs opacity-50 uppercase tracking-wide font-semibold mb-1">Instance</p>
+                <p className="text-xs opacity-50 uppercase tracking-wide font-semibold mb-1">
+                  Instance
+                </p>
                 <p className="font-mono text-xs break-all">{r.instance}</p>
               </div>
               <div>
-                <p className="text-xs opacity-50 uppercase tracking-wide font-semibold mb-1">Recorded at</p>
-                <p className="font-mono text-xs">{new Date(r.starts_at).toLocaleString()}</p>
+                <p className="text-xs opacity-50 uppercase tracking-wide font-semibold mb-1">
+                  Recorded at
+                </p>
+                <p className="font-mono text-xs">
+                  {new Date(r.starts_at).toLocaleString()}
+                </p>
               </div>
             </div>
           </td>
