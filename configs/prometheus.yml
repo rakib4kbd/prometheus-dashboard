@@ -51,7 +51,9 @@ scrape_configs:
         - http_default
     static_configs:
       - targets:
-          - https://domain.tld
+          - ownfra.dev
+          - code2deploy.io
+          - shop.toppersell.com
         labels:
           username: rakib4kbd
     relabel_configs:
